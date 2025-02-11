@@ -18,6 +18,7 @@
     "@aws-sdk/client-sqs": "^3.744.0",
     "@aws-sdk/lib-dynamodb": "^3.744.0",
     "jsonwebtoken": "^9.0.2",
+    "libphonenumber-js": "^1.11.19",
     "lodash": "^4.17.21",
     "sst": "^3.8.3"
   }
