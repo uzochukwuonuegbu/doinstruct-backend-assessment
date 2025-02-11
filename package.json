@@ -21,6 +21,7 @@
     "jsonwebtoken": "^9.0.2",
     "libphonenumber-js": "^1.11.19",
     "lodash": "^4.17.21",
-    "sst": "^3.8.3"
+    "sst": "^3.8.3",
+    "uuidv4": "^6.2.13"
   }
 }

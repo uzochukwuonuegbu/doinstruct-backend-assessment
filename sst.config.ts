@@ -97,12 +97,12 @@ export default $config({
     // API Gateway..
     const api = new sst.aws.ApiGatewayV2("EmployeeApiV1");
 
-    api.route("POST /import", {
-      handler: "packages/functions/initiateImports.handler",
-      link: [importBucket, importReportTable, secret],
-    });
+    // api.route("POST /import", {
+    //   handler: "packages/functions/initiateImports.handler",
+    //   link: [importBucket, importReportTable, secret],
+    // });
     api.route("GET /report/{id}", {
-      handler: "packages/functions/getImportReports.handler",
+      handler: "packages/functions/getReport.handler",
       link: [importReportTable, secret],
     });
 
