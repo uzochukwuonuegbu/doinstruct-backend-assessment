@@ -6,9 +6,9 @@ describe("Validate Employees function", () => {
   it("should validate employees correctly", () => {
     const employees = [
       { employeeId: "123", firstName: "John", lastName: "Doe" },
-      { employeeId: "123", firstName: "Jane", lastName: "Doe" }, // Duplicate ID
-      { employeeId: "456", firstName: "", lastName: "Smith" }, // Missing First Name
-      { employeeId: "789", firstName: "Alice", lastName: "" }, // Missing Last Name
+      { employeeId: "123", firstName: "Jane", lastName: "Doe" },
+      { employeeId: "456", firstName: "", lastName: "Smith" },
+      { employeeId: "789", firstName: "Alice", lastName: "" },
     ];
   
     const { validEmployees, errors } = validateEmployees(employees);
