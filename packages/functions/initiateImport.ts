@@ -12,7 +12,7 @@ export async function handler(
   if (!event.body) {
     return {
       statusCode: 403,
-      body: JSON.stringify({ error: 'No body passed' }),
+      body: JSON.stringify({ error: 'No Request body passed' }),
     };
   }
   let customer: Customer
@@ -26,6 +26,13 @@ export async function handler(
   }
   const data = JSON.parse(event.body);
   const { employees } = data
+
+  if (!employees.length) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: 'No Request body passed' }),
+    };
+  }
 
   const { validEmployees, errors } = validateEmployees(employees);
 
