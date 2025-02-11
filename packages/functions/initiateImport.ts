@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { Resource } from "sst";
 import { uuid } from "uuidv4";
-import { generateEmployees, validateEmployees } from '../core/services/employee.validator';
+import { validateEmployees } from '../core/services/employee.validator';
 import { Customer, authMiddleware } from '../core/services/auth.middleware';
 import { DynamoDBService } from "../core/services/dynamoDb.service";
 import { S3Service } from "../core/services/s3.service";
