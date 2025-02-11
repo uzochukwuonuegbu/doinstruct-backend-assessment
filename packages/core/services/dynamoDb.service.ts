@@ -73,9 +73,9 @@ export class DynamoDBService {
             {
               Put: {
                 ConditionExpression: "attribute_not_exists(#employeeId) AND attribute_not_exists(#phoneNumber)",
-                ExpressionAttributeNames: { "#employeeId": "employeeId" },
+                ExpressionAttributeNames: { "#employeeId": "employeeId", "#phoneNumber": "phoneNumber" },
                 Item: marshall(item),
-                TableName: Resource.ImportReportTable.name,
+                TableName: Resource.EmployeeTable.name,
               },
             },
           ]);
@@ -93,7 +93,7 @@ export class DynamoDBService {
                   customerId,
                   importId,
                 }),
-                TableName: Resource.EmployeeImportReport.name,
+                TableName: Resource.ImportReportTable.name,
                 UpdateExpression: "ADD #successCount :successCount",
               },
             });

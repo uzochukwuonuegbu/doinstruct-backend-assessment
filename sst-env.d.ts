@@ -5,6 +5,14 @@
 
 declare module "sst" {
   export interface Resource {
+    "EmployeeTable": {
+      "name": string
+      "type": "sst.aws.Dynamo"
+    }
+    "ImportReportTable": {
+      "name": string
+      "type": "sst.aws.Dynamo"
+    }
     "JwtToken": {
       "type": "sst.sst.Secret"
       "value": string
