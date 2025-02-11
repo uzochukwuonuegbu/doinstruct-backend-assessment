@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
-import { DynamoDBService } from "..";
-import { Customer, authMiddleware } from "../core/auth";
+import { DynamoDBService } from "../core/services/dynamoDb.service";
+import { Customer, authMiddleware } from "../core/services/auth.middleware";
 import { Resource } from "sst";
 
 export async function handler(
@@ -25,7 +25,7 @@ export async function handler(
 
   const importId = event.pathParameters?.id;
 
-  if (!importId || !customer.CustomerID) {
+  if (!importId || !customer.customerId) {
     return {
       statusCode: 400,
       body: JSON.stringify({ error: "CustomerID and importId are required" }),
@@ -34,8 +34,8 @@ export async function handler(
 
   try {
     const dbClient = new DynamoDBService();
-    const response = await dbClient.getItem(Resource.EmployeeImportReport.name,
-    { CustomerID: customer.CustomerID, importId: importId })
+    const response = await dbClient.getItem(Resource.ImportReportTable.name,
+    { customerId: customer.customerId, importId })
 
     if (!response.Item) {
       return {
@@ -53,7 +53,7 @@ export async function handler(
     console.log("Error fetching import report:", err);
     return {
       statusCode: 400,
-      body: JSON.stringify({ error: err }),
+      body: JSON.stringify({ error: 'Unable to get report' }),
     };
   }
 }
