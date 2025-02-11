@@ -6,6 +6,7 @@
 Ensure you have the following installed:
 - Node.js (>=20.x)
 - AWS CLI configured with appropriate credentials
+- **AWS CREDENTIALS:** can be found in `.env.sample` file
 - SST (Serverless Stack) installed globally (`npm install -g sst`)
 
 ### Running the Application Locally
@@ -47,10 +48,6 @@ Remeber to regenerate `Authorization`
 
 - Get Import Report: `GET https://uweh6g3dqj.execute-api.eu-central-1.amazonaws.com/report/{importId}`
 
-### AWS Account Keys for Other Developers
-- **Region:** `eu-central-1`
-- **Access Key ID:** `AKIAU5LH552OFVFRBU6M`
-- **Secret Access Key:** `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`
 
 ## Authentication & Generating JWT Token
 The application uses JWT authentication. To generate a token:
