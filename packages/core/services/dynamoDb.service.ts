@@ -1,7 +1,7 @@
 import { Resource } from 'sst';
 import { DynamoDBClient, TransactWriteItemsCommand, TransactWriteItemsCommandInput, GetItemCommand, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import {DynamoDBDocumentClient} from "@aws-sdk/lib-dynamodb";
-import { marshall } from "@aws-sdk/util-dynamodb";
+import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import { chunk } from "lodash";
 
 export class DynamoDBService {
@@ -66,48 +66,110 @@ export class DynamoDBService {
     throw new Error("Max retries reached for transaction");
     }
 
-    async  runEmployeeImportTransactions(data: any[][]) {
+    async runEmployeeImportTransactions(data: any[][]) {
       const batches = chunk(data, this.MAX_BATCH_SIZE);
+
       for (const batch of batches) {
-          const transactItems: any = batch.flatMap((item: any) => [
-            {
-              Put: {
-                ConditionExpression: "attribute_not_exists(#employeeId) AND attribute_not_exists(#phoneNumber)",
-                ExpressionAttributeNames: { "#employeeId": "employeeId", "#phoneNumber": "phoneNumber" },
-                Item: marshall(item),
-                TableName: Resource.EmployeeTable.name,
-              },
+        const transactItems: any[] = [];
+        const failedItems: any[] = [];
+    
+        batch.forEach((item) => {
+          transactItems.push({
+            Put: {
+              ConditionExpression: "attribute_not_exists(#employeeId) AND attribute_not_exists(#phoneNumber)",
+              ExpressionAttributeNames: { "#employeeId": "employeeId", "#phoneNumber": "phoneNumber" },
+              Item: marshall(item),
+              TableName: Resource.EmployeeTable.name,
             },
-          ]);
-          const uniqueKeys = new Set(batch.map((item: any) => `${item.customerId}:${item.importId}`));
-          uniqueKeys.forEach((key: any) => {
-            const [customerId, importId] = key.split(":");
-            
-            transactItems.push({
-              Update: {
-                ExpressionAttributeNames: { "#successCount": "successCount" },
-                ExpressionAttributeValues: marshall({
-                  ":successCount": batch.filter((item: any) => item.customerId === customerId && item.importId === importId).length,
-                }),
-                Key: marshall({
-                  customerId,
-                  importId,
-                }),
-                TableName: Resource.ImportReportTable.name,
-                UpdateExpression: "ADD #successCount :successCount",
-              },
-            });
           });
-          
+        });
     
-          const input = { TransactItems: transactItems };
+        const uniqueKeys = new Set(batch.map((item) => `${item.customerId}:${item.importId}`));
     
-          try {
-            await this.executeTransactWrite(input);
-            console.log(`Processed batch of ${batch.length} employees`);
-          } catch (error) {
-            console.error("Error processing batch:", error);
+        uniqueKeys.forEach((key) => {
+          const [customerId, importId] = key.split(":");
+    
+          transactItems.push({
+            Update: {
+              ExpressionAttributeNames: { "#successCount": "successCount" },
+              ExpressionAttributeValues: marshall({
+                ":successCount": batch.filter((item) => item.customerId === customerId && item.importId === importId).length,
+              }),
+              Key: marshall({ customerId, importId }),
+              TableName: Resource.ImportReportTable.name,
+              UpdateExpression: "ADD #successCount :successCount",
+            },
+          });
+        });
+    
+        const input = { TransactItems: transactItems };
+    
+        try {
+          await this.executeTransactWrite(input);
+          console.log(`Processed batch of ${batch.length} employees`);
+        } catch (error: any) {
+          console.error("Error processing batch:", error);
+    
+          // Identify failed records due to conditional check
+          if (error.code === "TransactionCanceledException" && error.CancellationReasons) {
+            error.CancellationReasons.forEach((reason: any, index: number) => {
+              if (reason.Code === "ConditionalCheckFailed") {
+                failedItems.push(batch[index]);
+              }
+            });
           }
         }
+    
+        if (failedItems.length > 0) {
+          // Prepare updates for failure count and error messages
+          uniqueKeys.forEach(async (key) => {
+            const [customerId, importId] = key.split(":");
+            const failedCount = failedItems.filter((item) => item.customerId === customerId && item.importId === importId).length;
+    
+            // Fetch existing errors from the import report
+            let existingErrors: string[] = [];
+            try {
+              const report = await this.getItem(Resource.ImportReportTable.name, { customerId, importId });
+              if (report?.Item) {
+                const item = unmarshall(report?.Item)
+                existingErrors = JSON.parse(item.errors);
+              }
+            } catch (fetchError) {
+              console.error("Error fetching existing errors:", fetchError);
+            }
+    
+            // Append new errors
+            const newErrors = failedItems.map(
+              (item) => `Employee ID: ${item.EmployeeID} - Failed due to ConditionExpression (duplicate entry)`
+            );
+    
+            const updatedErrors = [...existingErrors, ...newErrors];
+    
+            // Update failure count and errors in ImportReportTable
+            const updateTransactItems = [
+              {
+                Update: {
+                  ExpressionAttributeNames: { "#failureCount": "failureCount", "#totalValidCount": "totalValidCount", "#errors": "errors" },
+                  ExpressionAttributeValues: marshall({
+                    ":failureCount": failedCount,
+                    ":decrementValidCount": -failedCount, // Reduce valid count
+                    ":errors": JSON.stringify(updatedErrors),
+                  }),
+                  Key: marshall({ customerId, importId }),
+                  TableName: Resource.ImportReportTable.name,
+                  UpdateExpression: "ADD #failureCount :failureCount, #totalValidCount :decrementValidCount SET #errors = :errors",
+                },
+              },
+            ];
+    
+            try {
+              await this.executeTransactWrite({ TransactItems: updateTransactItems });
+              console.log(`Updated failure count and errors for ${failedItems.length} employees`);
+            } catch (updateError) {
+              console.error("Error updating failure count and errors:", updateError);
+            }
+          });
+        }
+      }
     }
   }
