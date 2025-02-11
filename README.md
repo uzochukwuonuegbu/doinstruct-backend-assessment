@@ -4,8 +4,15 @@
 
 ### Prerequisites
 Ensure you have the following installed:
+
 - Node.js (>=20.x)
-- AWS CLI configured with appropriate credentials (or manually add AWS Credentials too .env)
+
+- AWS CLI configured with appropriate credentials
+
+- **Region:** `eu-central-1`
+- **Access Key ID:** `AKIAU5LH552OFVFRBU6M`
+- **Secret Access Key:** `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`
+
 - SST (Serverless Stack) installed globally (`npm install -g sst`)
 
 ### Running the Application Locally
