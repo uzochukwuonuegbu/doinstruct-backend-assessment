@@ -33,9 +33,9 @@ export async function handler(
     })
     const parsedData = JSON.parse(result)
     const batches = chunkArray(parsedData.employees, 100)
-    const promises = []
+    const promises: any = []
     for (const batch of batches) {
-        promises.push(sendToSQS(Resource['save-employees-queue'].url, batch.map(emp => ({ ...emp, customerId: parsedData.customerId, importId: parsedData.importId }))));
+        promises.push(sendToSQS(Resource["save-employees-q"].url, batch.map(emp => ({ ...emp, customerId: parsedData.customerId, importId: parsedData.importId }))));
     }
     await Promise.all(promises);
   }

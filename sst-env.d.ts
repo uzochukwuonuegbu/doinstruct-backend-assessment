@@ -5,6 +5,10 @@
 
 declare module "sst" {
   export interface Resource {
+    "EmployeeApiV1": {
+      "type": "sst.aws.ApiGatewayV2"
+      "url": string
+    }
     "EmployeeTable": {
       "name": string
       "type": "sst.aws.Dynamo"
@@ -20,6 +24,22 @@ declare module "sst" {
     "import-dump-bkt": {
       "name": string
       "type": "sst.aws.Bucket"
+    }
+    "process-imports-deadletterq": {
+      "type": "sst.aws.Queue"
+      "url": string
+    }
+    "process-imports-q": {
+      "type": "sst.aws.Queue"
+      "url": string
+    }
+    "save-employees-deadletterq": {
+      "type": "sst.aws.Queue"
+      "url": string
+    }
+    "save-employees-q": {
+      "type": "sst.aws.Queue"
+      "url": string
     }
   }
 }

@@ -67,14 +67,14 @@ export default $config({
     });
 
     const saveEmployeesDLQ = new sst.aws.Queue("save-employees-deadletterq");
-    const saveEmployeesQueue = new sst.aws.Queue("save-imports-q", {
+    const saveEmployeesQueue = new sst.aws.Queue("save-employees-q", {
       dlq: saveEmployeesDLQ.arn
     });
 
 
     // Pub-Sub..
     processImportsQueue.subscribe({
-      handler: "packages/functions/processImports.handler",
+      handler: "packages/functions/processImport.handler",
       link: [saveEmployeesQueue, importBucket]
     })
     saveEmployeesQueue.subscribe({
@@ -99,7 +99,7 @@ export default $config({
     const api = new sst.aws.ApiGatewayV2("EmployeeApiV1");
 
     api.route("POST /import", {
-      handler: "packages/functions/initiateImports.handler",
+      handler: "packages/functions/initiateImport.handler",
       link: [importBucket, importReportTable, secret],
     });
     api.route("GET /report/{id}", {
@@ -112,10 +112,12 @@ export default $config({
       ImportReportTable: importReportTable.name,
 
       ImportBucket: importBucket.name,
+
       ProcessImportsQueue: processImportsQueue.url,
-      SaveEmployeesQueue: saveEmployeesQueue.url,
       ProccessImportsDLQ: processImportsDLQ.url,
+      SaveEmployeesQueue: saveEmployeesQueue.url,
       SaveEmployeesDLQ: saveEmployeesDLQ.url,
+
       APIUrl: api.url,
     };
   },
