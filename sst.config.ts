@@ -62,22 +62,23 @@ export default $config({
 
     // Queues (and dlq)..
     const processImportsDLQ = new sst.aws.Queue("process-imports-deadletterq");
-    const saveImportsDLQ = new sst.aws.Queue("save-imports-deadletterq");
     const processImportsQueue = new sst.aws.Queue("process-imports-q", {
       dlq: processImportsDLQ.arn,
     });
-    const saveImportsQueue = new sst.aws.Queue("save-imports-q", {
-      dlq: saveImportsDLQ.arn
+
+    const saveEmployeesDLQ = new sst.aws.Queue("save-employees-deadletterq");
+    const saveEmployeesQueue = new sst.aws.Queue("save-imports-q", {
+      dlq: saveEmployeesDLQ.arn
     });
 
 
     // Pub-Sub..
     processImportsQueue.subscribe({
       handler: "packages/functions/processImports.handler",
-      link: [saveImportsQueue, importBucket]
+      link: [saveEmployeesQueue, importBucket]
     })
-    saveImportsQueue.subscribe({
-      handler: "packages/functions/saveImports.handler",
+    saveEmployeesQueue.subscribe({
+      handler: "packages/functions/saveEmployees.handler",
       link: [employeeTable, importReportTable],
       concurrency: {
         reserved: 2
@@ -97,10 +98,10 @@ export default $config({
     // API Gateway..
     const api = new sst.aws.ApiGatewayV2("EmployeeApiV1");
 
-    // api.route("POST /import", {
-    //   handler: "packages/functions/initiateImports.handler",
-    //   link: [importBucket, importReportTable, secret],
-    // });
+    api.route("POST /import", {
+      handler: "packages/functions/initiateImports.handler",
+      link: [importBucket, importReportTable, secret],
+    });
     api.route("GET /report/{id}", {
       handler: "packages/functions/getReport.handler",
       link: [importReportTable, secret],
@@ -112,9 +113,9 @@ export default $config({
 
       ImportBucket: importBucket.name,
       ProcessImportsQueue: processImportsQueue.url,
-      SaveImportsQueue: saveImportsQueue.url,
+      SaveEmployeesQueue: saveEmployeesQueue.url,
       ProccessImportsDLQ: processImportsDLQ.url,
-      SaveImportsDLQ: saveImportsDLQ.url,
+      SaveEmployeesDLQ: saveEmployeesDLQ.url,
       APIUrl: api.url,
     };
   },
