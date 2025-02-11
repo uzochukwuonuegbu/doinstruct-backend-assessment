@@ -41,9 +41,29 @@ export default $config({
       }
     });
 
+
+    // Storage..
+    const importBucket = new sst.aws.Bucket("import-dump-bkt", {
+      access: 'public',
+      transform: {
+        policy: (args) => {
+          args.policy = sst.aws.iamEdit(args.policy, (policy) => {
+            policy.Statement.push({
+              Effect: "Allow",
+              Principal: { Service: "lambda.amazonaws.com" },
+              Action: "s3:GetObject",
+              Resource: $interpolate`arn:aws:s3:::${args.bucket}/*`,
+            });
+          });
+        },
+      },
+    });
+
     return {
       EmployeeTableName: employeeTable.name,
-      ImportReportTable: importReportTable.name
+      ImportReportTable: importReportTable.name,
+
+      importBucket: importBucket.name,
     };
   },
 });
