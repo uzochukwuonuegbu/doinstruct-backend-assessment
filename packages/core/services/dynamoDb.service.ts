@@ -115,8 +115,7 @@ export class DynamoDBService {
         } catch (error: any) {
           console.error("Error processing batch:", error);
     
-          // Identify failed records due to conditional check
-          if (error.code === "TransactionCanceledException" && error.CancellationReasons) {
+          if (error.name === "TransactionCanceledException" && error.CancellationReasons) {
             error.CancellationReasons.forEach((reason: any, index: number) => {
               if (reason.Code === "ConditionalCheckFailed") {
                 failedItems.push(batch[index]);
@@ -126,20 +125,17 @@ export class DynamoDBService {
         }
     
         if (failedItems.length > 0) {
+          console.log({ failedItems })
           await this.updateFailureCounts(uniqueKeys, failedItems);
         }
       }
     }
-    
-    /**
-     * Updates failure count and error messages in ImportReportTable.
-     */
+
     private async updateFailureCounts(uniqueKeys: Set<any>, failedItems: any[]) {
       for (const key of uniqueKeys) {
         const [customerId, importId] = key.split(":");
         const failedCount = failedItems.filter((item) => item.customerId === customerId && item.importId === importId).length;
     
-        // Fetch existing errors only once
         let existingErrors: string[] = [];
         try {
           const report = await this.getItem(Resource.ImportReportTable.name, { customerId, importId });
@@ -151,21 +147,19 @@ export class DynamoDBService {
           console.error("Error fetching existing errors:", fetchError);
         }
     
-        // Append new errors
         const newErrors = failedItems.map(
           (item) => `Employee ID: ${item.EmployeeID} - Failed due to ConditionExpression (duplicate entry)`
         );
     
         const updatedErrors = [...existingErrors, ...newErrors];
     
-        // Update failure count and errors in ImportReportTable
         const updateTransactItems = [
           {
             Update: {
               ExpressionAttributeNames: { "#failureCount": "failureCount", "#totalValidCount": "totalValidCount", "#errors": "errors" },
               ExpressionAttributeValues: marshall({
                 ":failureCount": failedCount,
-                ":decrementValidCount": -failedCount, // Reduce valid count
+                ":decrementValidCount": -failedCount,
                 ":errors": JSON.stringify(updatedErrors),
               }),
               Key: marshall({ customerId, importId }),

@@ -27,7 +27,6 @@ export async function handler(
   const data = JSON.parse(event.body);
   const { employees } = data
 
-  // const employees = generateEmployees(employee);
   const { validEmployees, errors } = validateEmployees(employees);
 
   try {
